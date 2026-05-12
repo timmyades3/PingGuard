@@ -154,12 +154,13 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=10),
+    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
 }
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = config('GOOGLE_EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('GOOGLE_EMAIL_HOST_PASSWORD')
