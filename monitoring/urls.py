@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import GroupViewSet, IPAddressViewset, EndpointViewset, GroupEnpointIpAddressAPIView
+from .views import *
 from rest_framework.routers import DefaultRouter
 
 
@@ -11,4 +11,9 @@ router.register(r'endpoints', EndpointViewset, basename='endpoint')
 urlpatterns = [
     path('', include(router.urls)),
     path("group_all/", GroupEnpointIpAddressAPIView.as_view(), name = "group_all"),
+    path("search/", SearchAPIView.as_view(), name="search"),
+    path("start-monitoring/<int:ip_id>/", StartIPMonitoringAPIView.as_view(), name="start-monitoring"),
+    path("stop-monitoring/<int:ip_id>/", StopIPMonitoringAPIView.as_view(), name="stop-monitoring"),
+    path("start-endpoint-monitoring/<int:endpoint_id>/", StartEndpointMonitoringAPIView.as_view(), name="start-endpoint-monitoring"),
+    path("stop-endpoint-monitoring/<int:endpoint_id>/", StopEndpointMonitoringAPIView.as_view(), name="stop-endpoint-monitoring"),
 ]

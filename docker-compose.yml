@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: ipms_web
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:18
+    container_name: ipms_postgres_db
+    environment:
+      POSTGRES_DB: ipms_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Newbie@2005
+    ports: ['5433:5432']
+    
+  worker:
+    build: .
+    container_name:  ipms_celery_worker
+    command: celery -A core worker --loglevel=info --pool=solo
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  beat:
+    build: .
+    container_name: ipms_celery_beat
+    command: celery -A core beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  
