@@ -16,14 +16,7 @@ services:
     depends_on:
       - redis
 
-  db:
-    image: postgres:18
-    container_name: ipms_postgres_db
-    environment:
-      POSTGRES_DB: ipms_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Newbie@2005
-    ports: ['5433:5432']
+  
     
   worker:
     build: .

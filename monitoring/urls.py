@@ -16,4 +16,6 @@ urlpatterns = [
     path("stop-monitoring/<int:ip_id>/", StopIPMonitoringAPIView.as_view(), name="stop-monitoring"),
     path("start-endpoint-monitoring/<int:endpoint_id>/", StartEndpointMonitoringAPIView.as_view(), name="start-endpoint-monitoring"),
     path("stop-endpoint-monitoring/<int:endpoint_id>/", StopEndpointMonitoringAPIView.as_view(), name="stop-endpoint-monitoring"),
+    path("dashboard/", DashboardAPIView.as_view(), name="dashboard"),
+    path("stats/<int:id>/", StatsAPIView.as_view(), name="stats"),
 ]

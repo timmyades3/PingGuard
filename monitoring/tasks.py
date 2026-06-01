@@ -250,9 +250,7 @@ def hourly_aggregate_and_cleanup():
     # Separate IP and ENDPOINT records and aggregate each appropriately
     ip_pings = old_pings.filter(target_type='IP')
     if ip_pings.exists():
-        aggregated_ip = ip_pings.annotate(
-            hour=TruncMinute('checked_at')
-        ).values('user', 'ip_address', 'hour').annotate(
+        aggregated_ip = ip_pings.values('user', 'ip_address').annotate(
             total=Count('id'),
             up_count=Count('id', filter=Q(status='UP')),
             down_count=Count('id', filter=Q(status='DOWN')),
@@ -264,7 +262,7 @@ def hourly_aggregate_and_cleanup():
                 user_id=entry.get('user'),
                 endpoint_id=None,
                 ip_address_id=entry.get('ip_address'),
-                hour=entry['hour'],
+                hour=cutoff,
                 defaults={
                     'target_type': 'IP',
                     'total_checks': entry['total'],
@@ -278,9 +276,7 @@ def hourly_aggregate_and_cleanup():
 
     endpoint_pings = old_pings.filter(target_type='ENDPOINT')
     if endpoint_pings.exists():
-        aggregated_ep = endpoint_pings.annotate(
-            hour=TruncMinute('checked_at')
-        ).values('user', 'endpoint', 'hour').annotate(
+        aggregated_ep = endpoint_pings.values('user', 'endpoint').annotate(
             total=Count('id'),
             up_count=Count('id', filter=Q(status='UP')),
             down_count=Count('id', filter=Q(status='DOWN')),
@@ -292,7 +288,7 @@ def hourly_aggregate_and_cleanup():
                 user_id=entry.get('user'),
                 endpoint_id=entry.get('endpoint'),
                 ip_address_id=None,
-                hour=entry['hour'],
+                hour=cutoff,
                 defaults={
                     'target_type': 'ENDPOINT',
                     'total_checks': entry['total'],
@@ -343,9 +339,8 @@ def daily_aggregate_and_cleanup():
     ip_groups = old_hourly.filter(target_type='IP')
     if ip_groups.exists():
         aggregated_ip = ip_groups.annotate(
-            day=TruncMinute('hour'),
             weighted_rt=F('avg_response_time_ms') * F('total_checks')
-        ).values('user', 'ip_address', 'day').annotate(
+        ).values('user', 'ip_address').annotate(
             sum_total_checks=Sum('total_checks'),
             sum_up_count=Sum('up_count'),
             sum_down_count=Sum('down_count'),
@@ -364,7 +359,7 @@ def daily_aggregate_and_cleanup():
                 user_id=entry['user'],
                 endpoint_id=None,
                 ip_address_id=entry.get('ip_address'),
-                day=entry['day'],
+                day=cutoff,
                 defaults={
                     'target_type': 'IP',
                     'total_checks': total,
@@ -380,9 +375,8 @@ def daily_aggregate_and_cleanup():
     ep_groups = old_hourly.filter(target_type='ENDPOINT')
     if ep_groups.exists():
         aggregated_ep = ep_groups.annotate(
-            day=TruncMinute('hour'),
             weighted_rt=F('avg_response_time_ms') * F('total_checks')
-        ).values('user', 'endpoint', 'day').annotate(
+        ).values('user', 'endpoint').annotate(
             sum_total_checks=Sum('total_checks'),
             sum_up_count=Sum('up_count'),
             sum_down_count=Sum('down_count'),
@@ -401,7 +395,7 @@ def daily_aggregate_and_cleanup():
                 user_id=entry['user'],
                 endpoint_id=entry.get('endpoint'),
                 ip_address_id=None,
-                day=entry['day'],
+                day=cutoff,
                 defaults={
                     'target_type': 'ENDPOINT',
                     'total_checks': total,

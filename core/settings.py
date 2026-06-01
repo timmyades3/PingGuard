@@ -202,10 +202,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     'hourly-aggregate-and-cleanup': {
         'task': 'monitoring.tasks.hourly_aggregate_and_cleanup',
-        'schedule': crontab(minute='*/8'),
+        'schedule': crontab(minute='*/6'),
     },
     'daily-aggregate-and-cleanup': {
         'task': 'monitoring.tasks.daily_aggregate_and_cleanup',
-        'schedule': crontab(minute='*/24'),
+        'schedule': crontab(minute='*/18'),
     }
 }

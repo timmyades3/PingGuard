@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Group,IpAddress,Endpoint
+from .models import Group,IpAddress,Endpoint, HourlyStat, DailyStat, MonitorCheck
 
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,3 +35,18 @@ class EndpointSerializer(serializers.ModelSerializer):
         if Endpoint.objects.filter(user=user, url=url, http_method=http_method).exists():
             raise serializers.ValidationError("You have already added this endpoint with the same HTTP method.")
         return attrs
+
+class MonitorCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MonitorCheck
+        fields = ['id', 'target_type', 'ip_address', 'endpoint', 'status', 'response_time_ms', 'error_message', 'checked_at']
+
+class HourlyStatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HourlyStat
+        fields = ['id', 'target_type', 'ip_address', 'endpoint', 'hour', 'total_checks', 'up_count', 'down_count', 'avg_response_time_ms', 'uptime_percent']
+
+class DailyStatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyStat
+        fields = ['id', 'target_type', 'ip_address', 'endpoint', 'day', 'total_checks', 'up_count', 'down_count', 'avg_response_time_ms', 'uptime_percent']
