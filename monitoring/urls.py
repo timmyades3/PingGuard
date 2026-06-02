@@ -10,12 +10,14 @@ router.register(r'endpoints', EndpointViewset, basename='endpoint')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path("group_all/", GroupEnpointIpAddressAPIView.as_view(), name = "group_all"),
+    path("group-all/", GroupEnpointIpAddressAPIView.as_view(), name = "group_all"),
     path("search/", SearchAPIView.as_view(), name="search"),
     path("start-monitoring/<int:ip_id>/", StartIPMonitoringAPIView.as_view(), name="start-monitoring"),
     path("stop-monitoring/<int:ip_id>/", StopIPMonitoringAPIView.as_view(), name="stop-monitoring"),
     path("start-endpoint-monitoring/<int:endpoint_id>/", StartEndpointMonitoringAPIView.as_view(), name="start-endpoint-monitoring"),
     path("stop-endpoint-monitoring/<int:endpoint_id>/", StopEndpointMonitoringAPIView.as_view(), name="stop-endpoint-monitoring"),
+    path("group-start-monitoring-all/<int:group_id>/", StartAllGroupMonitoringAPIView.as_view(), name="group-all-monitoring"),
+    path("group-stop-monitoring-all/<int:group_id>/", StopAllGroupMonitoringAPIView.as_view(), name="group-all-stop-monitoring"),
     path("dashboard/", DashboardAPIView.as_view(), name="dashboard"),
     path("stats/<int:id>/", StatsAPIView.as_view(), name="stats"),
 ]

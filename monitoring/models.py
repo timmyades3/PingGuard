@@ -176,3 +176,6 @@ class DailyStat(models.Model):
     def __str__(self):
         target = self.ip_address or self.endpoint
         return f"{self.target_type} | {target} | {self.day}"
+
+
+   
