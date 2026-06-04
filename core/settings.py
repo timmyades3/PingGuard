@@ -168,7 +168,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 5,
+    'PAGE_SIZE': 10,
 }
 
 SIMPLE_JWT = {
@@ -194,18 +194,3 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 CELERY_TIMEZONE = 'UTC'
-
-CELERY_BEAT_SCHEDULE = {
-    'master-monitor-check-every-5-minutes': {
-        'task': 'monitoring.tasks.master_monitor_check',
-        'schedule': crontab(minute='*/2'),
-    },
-    'hourly-aggregate-and-cleanup': {
-        'task': 'monitoring.tasks.hourly_aggregate_and_cleanup',
-        'schedule': crontab(minute='*/6'),
-    },
-    'daily-aggregate-and-cleanup': {
-        'task': 'monitoring.tasks.daily_aggregate_and_cleanup',
-        'schedule': crontab(minute='*/18'),
-    }
-}

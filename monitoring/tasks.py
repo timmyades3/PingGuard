@@ -6,41 +6,18 @@ from celery import shared_task
 import subprocess
 import platform
 from .models import IpAddress, Endpoint, MonitorCheck, HourlyStat, DailyStat
+from .notifications import process_check_result
 import requests
 import logging
 import socket
 import ssl
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.db.models import Avg, Count, Q, Sum, F, FloatField
 from django.db.models.functions import TruncHour, TruncDay, TruncMinute
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
-
-@shared_task(name="monitoring.tasks.master_monitor_check")
-def master_monitor_check():
-    close_old_connections()
-
-    active_ips = IpAddress.objects.filter(is_active=True)
-    active_endpoints = Endpoint.objects.filter(is_active=True)
-
-    if not active_ips.exists() and not active_endpoints.exists():
-        msg = "Idle: No active IPs or Endpoints"
-        logger.info(msg)
-        return msg
-
-    for ip in active_ips:
-        ping_ip.delay(ip.id)
-
-    for endpoint in active_endpoints:
-        check_endpoint.delay(endpoint.id)
-
-    msg = (
-        f"Dispatched {active_ips.count()} IPs and {active_endpoints.count()} Endpoints"
-    )
-    logger.info(msg)
-    return msg
 
 
 @shared_task(name="monitoring.tasks.ping_ip")
@@ -114,8 +91,21 @@ def ping_ip(ip_id):
             logger.error(
                 f"Failed to create MonitorCheck for IP {ip.ip_address}:{ip.port} - {str(e)}"
             )
+            connection.close()
 
+        try:
+            process_check_result(ip.user, "IP", ip, res["status"], res.get("error", ""))
+        except Exception as e:
+            logger.error(f"process_check_result failed: {e}")
+            connection.close()
+            
         logger.info(f"Ping result for IP {ip.ip_address}:{ip.port}: {res}")
+
+        if ip.is_active:
+            interval = getattr(ip.user.settings, 'moniotoring_interval_seconds', 60) if hasattr(ip.user, 'settings') else 60
+            logger.info(f"Rescheduling next check for IP {ip.ip_address}:{ip.port} in {interval} seconds")
+            ping_ip.apply_async((ip.id,), countdown=interval)
+
         return res
 
     param = "-n" if platform.system().lower() == "windows" else "-c"
@@ -159,8 +149,21 @@ def ping_ip(ip_id):
         )
     except Exception as e:
         logger.error(f"Failed to create MonitorCheck for IP {ip.ip_address}: {str(e)}")
+        connection.close()
 
+    try:
+        process_check_result(ip.user, "IP", ip, res["status"], res.get("error", ""))
+    except Exception as e:
+        logger.error(f"process_check_result failed: {e}")
+        connection.close()
+        
     logger.info(f"Ping result for IP {ip.ip_address}: {res}")
+
+    if ip.is_active:
+        interval = getattr(ip.user.settings, 'moniotoring_interval_seconds', 60) if hasattr(ip.user, 'settings') else 60
+        logger.info(f"Rescheduling next check for IP {ip.ip_address} in {interval} seconds")
+        ping_ip.apply_async((ip.id,), countdown=interval)
+
     return res
 
 
@@ -224,8 +227,21 @@ def check_endpoint(endpoint_id):
         logger.error(
             f"Failed to create MonitorCheck for Endpoint {endpoint.url}: {str(e)}"
         )
+        connection.close()
 
+    try:
+        process_check_result(endpoint.user, "ENDPOINT", endpoint, res["status"], res.get("error", ""))
+    except Exception as e:
+        logger.error(f"process_check_result failed: {e}")
+        connection.close()
+        
     logger.info(f"Check result for Endpoint {endpoint.url}: {res}")
+
+    if endpoint.is_active:
+        interval = getattr(endpoint.user.settings, 'moniotoring_interval_seconds', 60) if hasattr(endpoint.user, 'settings') else 60
+        logger.info(f"Rescheduling next check for Endpoint {endpoint.url} in {interval} seconds")
+        check_endpoint.apply_async((endpoint.id,), countdown=interval)
+
     return res
 
 

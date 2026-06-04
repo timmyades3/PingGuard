@@ -7,7 +7,7 @@ router = DefaultRouter()
 router.register(r'groups', GroupViewSet, basename='group')
 router.register(r'ip-addresses', IPAddressViewset, basename='ip-address')
 router.register(r'endpoints', EndpointViewset, basename='endpoint')
-
+router.register(r'settings', SettingsViewset, basename='settings')
 urlpatterns = [
     path('', include(router.urls)),
     path("group-all/", GroupEnpointIpAddressAPIView.as_view(), name = "group_all"),

@@ -4,9 +4,9 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.shortcuts import render
 from django.db.models import Q, OuterRef, Subquery, Count, Avg, Sum, F, FloatField
-from rest_framework import request, viewsets, permissions, status
+from rest_framework import request, viewsets, permissions, status, mixins
 from .permissions import IsOwner
-from .models import Group, IpAddress, Endpoint, MonitorCheck, HourlyStat, DailyStat
+from .models import Group, IpAddress, Endpoint, MonitorCheck, HourlyStat, DailyStat, Settings
 from .serializers import (
     GroupSerializer,
     IpAddressSerializer,
@@ -14,6 +14,7 @@ from .serializers import (
     MonitorCheckSerializer,
     HourlyStatSerializer,
     DailyStatSerializer,
+    SettingsSerializer,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -86,6 +87,23 @@ class EndpointViewset(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+@method_decorator(name="list", decorator=swagger_auto_schema(tags=["Settings"]))
+@method_decorator(name="update", decorator=swagger_auto_schema(tags=["Settings"]))
+@method_decorator(
+    name="partial_update", decorator=swagger_auto_schema(tags=["Settings"])
+)
+class SettingsViewset(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+    serializer_class = SettingsSerializer
+    permission_classes = (permissions.IsAuthenticated, IsOwner)
+    queryset = Settings.objects.all()
+    pagination_class = None  
+    http_method_names = ["get", "put", "patch", "head", "options"]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Settings.objects.none()
+        return Settings.objects.filter(user=self.request.user)
 
 
 class GroupEnpointIpAddressAPIView(APIView):
@@ -667,3 +685,5 @@ class StatsAPIView(APIView):
                 },
             }
             return Response(data, status=status.HTTP_200_OK)
+
+

@@ -16,8 +16,6 @@ services:
     depends_on:
       - redis
 
-  
-    
   worker:
     build: .
     container_name:  ipms_celery_worker

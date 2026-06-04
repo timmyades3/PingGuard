@@ -2,6 +2,8 @@ from django.db import models
 from users.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models import Q 
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Group(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
@@ -35,6 +37,7 @@ class IpAddress(models.Model):
     class Meta:
         ordering = ['-created_at']
         unique_together = ('user', 'ip_address') 
+        verbose_name_plural = "IP Addresses"
 
     def __str__(self):
         return f"{self.label} ({self.ip_address})"
@@ -178,4 +181,56 @@ class DailyStat(models.Model):
         return f"{self.target_type} | {target} | {self.day}"
 
 
-   
+class Incident(models.Model):
+    STATUS_CHOICES = [
+        ('OPEN', 'OPEN'),
+        ('RESOLVED', 'RESOLVED'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='incidents')
+    target_type = models.CharField(max_length=10, choices=TargetType.choices)
+    ip_address = models.ForeignKey(IpAddress, on_delete=models.CASCADE, null=True, blank=True, related_name='incidents')
+    endpoint = models.ForeignKey(Endpoint, on_delete=models.CASCADE, null=True, blank=True, related_name='incidents')
+    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='OPEN')
+    started_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    last_notification_sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        target = self.ip_address or self.endpoint
+        return f"Incident: {self.target_type} | {target} | {self.status}"
+
+
+class Settings(models.Model):   
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
+    notification_email = models.EmailField(max_length=255, blank=True, null=True)
+    notification_interval_minutes = models.PositiveIntegerField(
+        default=30,
+        validators=[MinValueValidator(5), MaxValueValidator(1440)]  
+    ) 
+    moniotoring_interval_seconds = models.PositiveIntegerField(
+        default=60,
+        validators=[MinValueValidator(10), MaxValueValidator(3600)]
+    )
+
+    class Meta:
+        verbose_name_plural = "Settings"
+
+    def __str__(self):
+        return f"Settings for {self.user.username}"
+
+
+
+@receiver(post_save, sender=User)
+def create_user_settings(sender, instance, created, **kwargs):
+    if created:
+        Settings.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_settings(sender, instance, **kwargs):
+    if hasattr(instance, 'settings'):
+        instance.settings.save()
