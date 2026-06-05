@@ -26,4 +26,4 @@ COPY . /app/
 EXPOSE 8000
 
 # Run Django with makemigrations and migrations
-CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --reload --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py makemigrations --noinput && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]

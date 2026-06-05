@@ -7,15 +7,28 @@ services:
   web:
     build: .
     container_name: ipms_web
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
     env_file:
       - .env
     volumes:
       - .:/app
-    ports:
-      - "8000:8000"
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    expose:
+      - 8000
     depends_on:
       - redis
-
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      - web
   worker:
     build: .
     container_name:  ipms_celery_worker
@@ -34,4 +47,7 @@ services:
     depends_on:
       - redis
 
+volumes:
+  static_volume:
+  media_volume:
   
