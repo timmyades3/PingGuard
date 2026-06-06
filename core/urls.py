@@ -28,9 +28,9 @@ from django.conf.urls.static import static
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="IPMS API",
+      title="PingGuard API",
       default_version='v1',
-      description="Test description",
+      description="API documentation for PingGuard, a monitoring tool for server uptime and performance.",
       terms_of_service="https://www.ourapp.com/policies/terms/",
       contact=openapi.Contact(email="contact@ipms.local"),
       license=openapi.License(name="Test License"),
@@ -47,7 +47,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('admin/', admin.site.urls),
     path('api/auth/',include('users.urls')),
-    path('api/monitoring/',include('monitoring.urls'))
+    path('api/monitor/',include('monitoring.urls'))
 ]
 
 if settings.DEBUG:
