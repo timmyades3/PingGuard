@@ -208,6 +208,7 @@ class Incident(models.Model):
 class Settings(models.Model):   
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
     notification_email = models.EmailField(max_length=255, blank=True, null=True)
+    webhook_url = models.URLField(max_length=500, blank=True, null=True)
     notification_interval_minutes = models.PositiveIntegerField(
         default=30,
         validators=[MinValueValidator(5), MaxValueValidator(1440)]  

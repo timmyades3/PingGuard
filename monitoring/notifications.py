@@ -1,4 +1,5 @@
 import logging
+import requests
 from datetime import timedelta
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -64,6 +65,37 @@ def send_up_email(user, target_type, target_obj, incident):
     except Exception as e:
         logger.error(f"Failed to send UP email to {recipient_email(user)}: {e}")
 
+def send_webhook_notification(user, target_type, target_obj, status, error_message="", incident=None):
+    settings_obj = Settings.objects.filter(user=user).first()
+    if not settings_obj or not settings_obj.webhook_url:
+        return
+
+    url = settings_obj.webhook_url
+    
+    message = f"[{target_type}] Alert: {target_obj} is {status}"
+    
+    if status == 'DOWN':
+        content = f"Target '{target_obj}' is currently DOWN.\nError: {error_message}"
+    elif status == 'STILL DOWN' and incident:
+        downtime_duration = timezone.now() - incident.started_at
+        content = f"Target '{target_obj}' has been DOWN for {str(downtime_duration).split('.')[0]}."
+    elif status == 'UP' and incident:
+        downtime_duration = incident.resolved_at - incident.started_at
+        content = f"Target '{target_obj}' is back UP.\nIt was down for {str(downtime_duration).split('.')[0]}."
+    else:
+        content = f"Target '{target_obj}' status: {status}"
+
+    payload = {
+        "content": f"**{message}**\n{content}\nTime: {timezone.now()}"
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        logger.info(f"Sent {status} webhook for {target_type} {target_obj}")
+    except Exception as e:
+        logger.error(f"Failed to send webhook for {target_type} {target_obj}: {e}")
+
 def process_check_result(user, target_type, target_obj, status, error_message=""):
     """
     Evaluates the check result and manages the Incident lifecycle and notifications.
@@ -86,12 +118,14 @@ def process_check_result(user, target_type, target_obj, status, error_message=""
             kwargs['last_notification_sent_at'] = now
             incident = Incident.objects.create(**kwargs)
             send_down_email(user, target_type, target_obj, error_message)
+            send_webhook_notification(user, target_type, target_obj, 'DOWN', error_message=error_message)
         else:
             # Incident already open, check if we need to send follow-up
             setting = Settings.objects.filter(user=user).first()
             
             if incident.last_notification_sent_at and (now - incident.last_notification_sent_at) >= timedelta(minutes=setting.notification_interval_minutes):
                 send_still_down_email(user, target_type, target_obj, incident)
+                send_webhook_notification(user, target_type, target_obj, 'STILL DOWN', incident=incident)
                 incident.last_notification_sent_at = now
                 incident.save()
 
@@ -103,3 +137,4 @@ def process_check_result(user, target_type, target_obj, status, error_message=""
             incident.resolved_at = now
             incident.save()
             send_up_email(user, target_type, target_obj, incident)
+            send_webhook_notification(user, target_type, target_obj, 'UP', incident=incident)

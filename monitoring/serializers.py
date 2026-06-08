@@ -127,6 +127,7 @@ class SettingsSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "notification_email",
+            "webhook_url",
             "notification_interval_minutes",
             "moniotoring_interval_seconds",
         ]
